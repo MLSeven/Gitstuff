@@ -49,12 +49,18 @@ function Get-AgentInstall {
     write-host "Processing Event Data for Agent Install"
 
     $fragments = foreach ($e in $eventData) {
-        if ($e.command -match ",(\[.*\)\))\)") {
+        if ($e.command -match ".*(\[System\.Text\.Encoding\].*\)\))") {
             invoke-expression $matches[1]
         }
     }
-    [string]::join('',$fragments)
-}
+    if ($fragments) {
+        [string]::join('',$fragments)
+    }
+    else {
+        write-warning "No Fragments"
+    }
+} 
+
 
 function Read-Setuplog {
     param (
