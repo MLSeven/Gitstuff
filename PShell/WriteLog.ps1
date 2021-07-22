@@ -3,6 +3,7 @@ function Write-Log {
     $path="$($env:SystemDrive)\psTranscript.log",
     $text="",
     [object]$object,
+    [int32]$width=132,
     [switch]$newlog
   )
   
@@ -11,5 +12,5 @@ function Write-Log {
   }
   # for each line of text pre-pend the UTC Timesamp
   $text | foreach-object {"$([datetime]::now.ToUniversalTime().ToString("s")) : $($_)"} | add-content -path $path -Encoding UTF8
-  $object | out-string -width 132 | add-content -path $path -Encoding UTF8 
+  $object | out-string -width $width | add-content -path $path -Encoding UTF8 
 }
