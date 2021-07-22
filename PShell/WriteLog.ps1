@@ -7,6 +7,9 @@ function Write-Log {
     [switch]$newlog
   )
   
+  #if the log file does not exist create it anyway
+  if (-NOT (test-path -path $path)) {$newlog = $true}
+
   if ($newlog) {
     set-content -path $path -value "$([datetime]::now.ToUniversalTime().ToString("s")) : Opening new Log File" -Encoding UTF8
   }
