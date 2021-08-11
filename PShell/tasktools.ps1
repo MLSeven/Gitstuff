@@ -23,7 +23,9 @@ function Get-ProcessTree {
 
 # Use Morpheus Variable to determine the context
 $morpheusNullString="null"
-if ("<%=instance.name %>" -eq $MorpheusNullString) {$context="Server"} else {$context="Instance"}
+$morpheusInstance = "<%=instance.name%>"
+$morpheusServer = "<%=instance.name%>"
+if ($morpheusInstance.trim() -eq $MorpheusNullString) {$context="Server"} else {$context="Instance"}
 
 # LoginId is useful for tracing in Security log
 $loginId = Get-CimInstance -class win32_process -Filter "ProcessId =$PID" | Get-CimAssociatedInstance -ResultClassName win32_logonsession 
@@ -44,7 +46,7 @@ foreach ($p in $tree) {
 
 $PSEnv = [PSCustomObject]@{
     hostName = [Environment]::MachineName;
-    context= $context;
+    morpheus = [PSCustomObject]@{context=$context;instance=$morpheusInstance;server=$morpheusServer}
     OS = [Environment]::OSVersion;
     envUserName = [Environment]::UserName;
     CurrentDirectory = [Environment]::CurrentDirectory;
