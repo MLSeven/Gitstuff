@@ -59,5 +59,5 @@ $PSEnv = [PSCustomObject]@{
     loginId = $loginId | Select-Object -prop LogonId,LogonType,StartTime,AuthenticationPackage
 }
 
-$json = $PSEnv | convertto-json -depth 3
+$json = $PSEnv | convertto-json -depth 10
 $json
