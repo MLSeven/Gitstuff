@@ -1,5 +1,6 @@
 # Some Useful Powershell snippets for debuging Morpheus Tasks
 
+# Return the process hierarchy. Returns an array of processes from child-parent order 
 function Get-ProcessTree {
     param (
         [int]$ProcessId=$PId
@@ -20,35 +21,42 @@ function Get-ProcessTree {
     return $tree
 }
 
-# Get all Proccesses in the current Session
-#$sessionId= (Get-Process -Id $PID).SessionId 
-#$sessionProcesses = Get-Process | Where-Object {$_.SessionId -eq $sessionId} | Select-Object -property Id,Name,SessionId
+# Use Morpheus Variable to determine the context
+$morpheusNullString="null"
+if ("<%=instance.name %>" -eq $MorpheusNullString) {$context="Server"} else {$context="Instance"}
 
+# LoginId is useful for tracing in Security log
 $loginId = Get-CimInstance -class win32_process -Filter "ProcessId =$PID" | Get-CimAssociatedInstance -ResultClassName win32_logonsession 
-$loginProcesses = $loginId | Get-CimAssociatedInstance -ResultClassName win32_process 
 
 # Windows Security and Identity object for current process
-$UserIdentity =  [System.Security.Principal.WindowsIdentity]::GetCurrent()
-$UserPrincipal = [System.Security.Principal.WindowsPrincipal]$UserIdentity
-$AdminElevated=$UserPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+$userIdentity =  [System.Security.Principal.WindowsIdentity]::GetCurrent()
+$userPrincipal = [System.Security.Principal.WindowsPrincipal]$UserIdentity
+$adminElevated=$UserPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
-$t = get-processTree -processId $PID | Select-object -prop id,name
+#Proccess Hierarchy
+$tree = get-processTree -processId $PID 
+
+$child = $null
+foreach ($p in $tree) {
+  $root = [PSCustomObject]@{pid=$p.ProcessId;name=$p.name;child=$child}
+  $child = $root
+}
 
 $PSEnv = [PSCustomObject]@{
     hostName = [Environment]::MachineName;
+    context= $context;
     OS = [Environment]::OSVersion;
-    envUser = [Environment]::UserName;
+    envUserName = [Environment]::UserName;
     CurrentDirectory = [Environment]::CurrentDirectory;
     interactive = [Environment]::UserInteractive;
-    user = $UserIdentity | Select-Object -property Name,AuthenticationType,IsAuthenticated,IsSystem,ImpersonationLevel;
-    elevated = $AdminElevated;
+    userIdentity = $userIdentity | Select-Object -property Name,AuthenticationType,IsAuthenticated,IsSystem,ImpersonationLevel;
+    elevated = $adminElevated;
     UTCStart = [DateTime]::now.toUniversalTime().toString();
-    pId = $pid;
-    environment = [Environment]::GetEnvironmentVariables();
+    processId = $pid;
+    eVars = [Environment]::GetEnvironmentVariables();
     cmdLine = [Environment]::CommandLine;
-    processTree = $t;
-    loginId = $loginId | Select-Object -prop LogonId,LogonType,StartTime,AuthenticationPackage;
-    loginProcesses = $loginProcesses | Select-Object -prop ProcessId,Name,CreationDate,ParentProcessId
+    processTree = $root;
+    loginId = $loginId | Select-Object -prop LogonId,LogonType,StartTime,AuthenticationPackage
 }
 
 $json = $PSEnv | convertto-json -depth 3
