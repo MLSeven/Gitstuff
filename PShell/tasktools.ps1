@@ -6,10 +6,10 @@ function Get-ProcessTree {
     )
 
     $tree = do {
-        $currProcess = Get-Process -id $processId -ErrorAction SilentlyContinue
+        $currProcess = Get-CimInstance -class win32_Process -filter "ProcessId=$processId" -ErrorAction SilentlyContinue
         if ($?) {
             #Process exists - get Parent ID return current process and loop
-            $processId = (Get-CimInstance -class Win32_Process -filter "ProcessId=$processId").ParentProcessID
+            $processId = $currProcess.ParentProcessID
             $currProcess
         } else {
             # No Process
